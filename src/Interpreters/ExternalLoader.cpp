@@ -892,7 +892,7 @@ private:
             {
                 result.is_lazy = isObjectLazy(*info.config);
             }
-            catch (...)
+            catch (...) // Ok: an invalid lazy load setting falls back to the loader-wide default
             {
                 result.is_lazy = !always_load_everything;
             }
