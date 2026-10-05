@@ -79,6 +79,8 @@ public:
         Duration loading_duration{};
         std::exception_ptr exception;
         std::shared_ptr<const ObjectConfig> config;
+        /// Whether the object is loaded on first use rather than eagerly.
+        bool is_lazy = false;
     };
 
     using LoadResults = std::vector<LoadResult>;

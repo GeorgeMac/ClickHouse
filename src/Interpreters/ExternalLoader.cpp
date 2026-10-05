@@ -565,7 +565,7 @@ public:
         const Info * info = getInfo(name);
         if (!info)
             return notExists<ReturnType>(name);
-        return info->getLoadResult<ReturnType>();
+        return makeLoadResult<ReturnType>(*info);
     }
 
     /// Returns all the load results as a map.
@@ -623,7 +623,7 @@ public:
         Info * info = loadImpl(name, timeout, false, lock);
         if (!info)
             return notExists<ReturnType>(name);
-        return info->getLoadResult<ReturnType>();
+        return makeLoadResult<ReturnType>(*info);
     }
 
     template <typename ReturnType>
@@ -655,7 +655,7 @@ public:
         Info * info = loadImpl(name, timeout, true, lock);
         if (!info)
             return notExists<ReturnType>(name);
-        return info->getLoadResult<ReturnType>();
+        return makeLoadResult<ReturnType>(*info);
     }
 
     template <typename ReturnType>
@@ -883,6 +883,15 @@ private:
     }
 
     template <typename ReturnType>
+    ReturnType makeLoadResult(const Info & info) const
+    {
+        auto result = info.getLoadResult<ReturnType>();
+        if constexpr (std::is_same_v<ReturnType, LoadResult>)
+            result.is_lazy = isObjectLazy(*info.config);
+        return result;
+    }
+
+    template <typename ReturnType>
     ReturnType collectLoadResults(const FilterByNameFunction & filter) const
     {
         ReturnType results;
@@ -891,7 +900,7 @@ private:
         {
             if (!filter || filter(name))
             {
-                auto result = info.template getLoadResult<typename ReturnType::value_type>();
+                auto result = makeLoadResult<typename ReturnType::value_type>(info);
                 if constexpr (std::is_same_v<typename ReturnType::value_type, LoadablePtr>)
                 {
                     if (!result)
