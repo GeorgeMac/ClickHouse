@@ -887,7 +887,16 @@ private:
     {
         auto result = info.getLoadResult<ReturnType>();
         if constexpr (std::is_same_v<ReturnType, LoadResult>)
-            result.is_lazy = isObjectLazy(*info.config);
+        {
+            try
+            {
+                result.is_lazy = isObjectLazy(*info.config);
+            }
+            catch (...)
+            {
+                result.is_lazy = !always_load_everything;
+            }
+        }
         return result;
     }
 

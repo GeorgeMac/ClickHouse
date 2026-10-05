@@ -7,6 +7,11 @@ from helpers.test_tools import assert_eq_with_retry
 cluster = ClickHouseCluster(__file__)
 node_lazy = cluster.add_instance("node_lazy", stay_alive=True)
 node_eager = cluster.add_instance("node_eager", main_configs=["configs/eager.xml"], stay_alive=True)
+node_xml = cluster.add_instance(
+    "node_xml",
+    main_configs=["configs/eager.xml"],
+    dictionaries=["configs/dictionaries/xml_dictionary.xml"],
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -78,3 +83,16 @@ def test_dictionary_lazy_load(started_cluster, node, clause, lazy):
     assert get_is_lazy(node, "dict") == lazy
 
     node.query("DROP DICTIONARY dict")
+
+
+def test_invalid_lazy_load_setting_keeps_system_dictionaries_readable(started_cluster):
+    assert get_is_lazy(node_xml, "xml_dict")
+
+    node_xml.replace_in_config(
+        "/etc/clickhouse-server/dictionaries/xml_dictionary.xml",
+        "<dictionary_lazy_load>1</dictionary_lazy_load>",
+        "<dictionary_lazy_load>invalid</dictionary_lazy_load>",
+    )
+    node_xml.query("SYSTEM RELOAD CONFIG")
+
+    assert_eq_with_retry(node_xml, "SELECT is_lazy FROM system.dictionaries WHERE name = 'xml_dict'", "false")
